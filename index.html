@@ -1,0 +1,220 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>번호 뽑기 1~24</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jua&display=swap">
+<style>
+:root{
+  --bg1:#f3e9ff; --bg2:#ffe3f0; --ink:#2b1458; --disc:#ffffff; --disc-ink:#2b1458;
+  --pink:#ff3d8b; --yellow:#ffc928; --cyan:#19c7d1; --violet:#7a4dff;
+  --bulb-off:#d9c8ff; --tile:rgba(43,20,88,.08); --tile-ink:#8a78b8;
+  color-scheme:light;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg1:#2a1160; --bg2:#5a1363; --ink:#fff1c9; --disc:#1b0b42; --disc-ink:#fff1c9;
+    --bulb-off:#4a3290; --tile:rgba(255,255,255,.09); --tile-ink:#9d8bd0; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg1:#2a1160; --bg2:#5a1363; --ink:#fff1c9; --disc:#1b0b42; --disc-ink:#fff1c9;
+  --bulb-off:#4a3290; --tile:rgba(255,255,255,.09); --tile-ink:#9d8bd0; color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{
+  min-height:100vh; color:var(--ink);
+  background:radial-gradient(circle at 50% 18%,var(--bg2),transparent 60%),var(--bg1);
+  background-attachment:fixed;
+  font-family:"Jua","Apple SD Gothic Neo","Malgun Gothic","Noto Sans KR",sans-serif;
+  padding:22px 16px 30px;
+  display:flex; flex-direction:column; align-items:center; gap:clamp(18px,3.4vh,30px);
+}
+.wheel{
+  width:min(80vw,380px); aspect-ratio:1; position:relative; border-radius:50%;
+  container-type:inline-size;
+  background:conic-gradient(var(--pink),var(--yellow),var(--cyan),var(--violet),var(--pink));
+  padding:9cqw;
+  box-shadow:0 14px 0 rgba(0,0,0,.18);
+}
+.disc{
+  width:100%; height:100%; border-radius:50%; background:var(--disc); color:var(--disc-ink);
+  display:grid; place-items:center; box-shadow:inset 0 0 0 5px rgba(0,0,0,.08);
+}
+.bulb{
+  position:absolute; left:50%; top:50%; width:5cqw; height:5cqw; margin:-2.5cqw; border-radius:50%;
+  background:var(--yellow); box-shadow:0 0 12px 3px var(--yellow);
+  transform:rotate(var(--a)) translateY(-46cqw);
+  animation:blink 1s steps(1) infinite;
+}
+.bulb:nth-child(even){animation-delay:-.5s}
+.wheel.rolling .bulb{animation-duration:.25s}
+@keyframes blink{0%{opacity:1}50%{opacity:.25;box-shadow:none}}
+.num{line-height:1; font-size:46cqw; font-variant-numeric:tabular-nums}
+.num.empty{font-size:34cqw; color:var(--tile-ink)}
+.num.rolling{opacity:.55}
+.num.pop{animation:pop .5s cubic-bezier(.2,1.6,.4,1)}
+@keyframes pop{0%{transform:scale(.4) rotate(-12deg)}100%{transform:scale(1) rotate(0)}}
+.status{margin:0; font-size:clamp(20px,4.4vw,28px)}
+.draw{
+  font:inherit; font-size:clamp(38px,9vw,60px); line-height:1; padding:.32em 1.7em;
+  border:none; border-radius:999px; background:var(--pink); color:#fff;
+  box-shadow:0 8px 0 #b2155a; cursor:pointer; touch-action:manipulation;
+  -webkit-tap-highlight-color:transparent;
+}
+.draw:active:not(:disabled){transform:translateY(6px); box-shadow:0 2px 0 #b2155a}
+.draw:disabled{opacity:.5; cursor:default}
+.draw:focus-visible,.reset:focus-visible{outline:4px solid var(--yellow); outline-offset:5px}
+.tiles{display:grid; grid-template-columns:repeat(8,1fr); gap:8px; width:min(100%,560px)}
+@media (max-width:480px){.tiles{grid-template-columns:repeat(6,1fr)}}
+.tile{
+  aspect-ratio:1; border-radius:14px; display:grid; place-items:center;
+  background:var(--tile); color:var(--tile-ink); font-size:clamp(20px,5vw,28px);
+}
+.tile.done{color:#fff; box-shadow:0 3px 0 rgba(0,0,0,.22)}
+.tile.k0{background:var(--pink)} .tile.k1{background:var(--violet)}
+.tile.k2{background:var(--cyan)} .tile.k3{background:var(--yellow); color:#2b1458}
+.tile.last{outline:3px solid var(--ink); outline-offset:2px}
+.reset{
+  font:inherit; font-size:20px; padding:.35em 1.3em; border-radius:999px; cursor:pointer;
+  background:transparent; color:var(--ink); border:2px solid var(--tile-ink);
+}
+.reset.armed{background:var(--pink); border-color:var(--pink); color:#fff}
+#confetti{position:fixed; inset:0; width:100%; height:100%; pointer-events:none}
+@media (prefers-reduced-motion:reduce){.num.pop{animation:none}.bulb{animation:none}}
+</style>
+</head>
+<body>
+  <div class="wheel" id="wheel">
+    <div class="disc"><div class="num empty" id="num" aria-live="polite">?</div></div>
+  </div>
+  <p class="status" id="status">남은 번호 24개</p>
+  <button class="draw" id="draw">뽑기!</button>
+  <div class="tiles" id="tiles" aria-label="뽑힌 번호"></div>
+  <button class="reset" id="reset">처음부터 다시</button>
+  <canvas id="confetti"></canvas>
+
+<script>
+const MAX = 24;
+const wheelEl = document.getElementById('wheel');
+const numEl = document.getElementById('num');
+const drawBtn = document.getElementById('draw');
+const statusEl = document.getElementById('status');
+const tilesEl = document.getElementById('tiles');
+const resetBtn = document.getElementById('reset');
+const cv = document.getElementById('confetti');
+const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+let drawn = [];
+let rolling = false;
+
+try {
+  const saved = JSON.parse(localStorage.getItem('draw24') || '[]');
+  if (Array.isArray(saved)) drawn = saved.filter(n => Number.isInteger(n) && n >= 1 && n <= MAX);
+} catch (e) {}
+
+function save(){ try { localStorage.setItem('draw24', JSON.stringify(drawn)); } catch (e) {} }
+function remaining(){ const s = new Set(drawn); return Array.from({length:MAX},(_,i)=>i+1).filter(n=>!s.has(n)); }
+
+for (let i = 0; i < 24; i++) {
+  const b = document.createElement('span');
+  b.className = 'bulb'; b.style.setProperty('--a', (i * 15) + 'deg');
+  wheelEl.appendChild(b);
+}
+
+const tiles = [];
+for (let i = 1; i <= MAX; i++) {
+  const t = document.createElement('div');
+  t.className = 'tile k' + (i % 4); t.textContent = i;
+  tilesEl.appendChild(t); tiles.push(t);
+}
+
+function render(){
+  const last = drawn[drawn.length - 1];
+  tiles.forEach((t, i) => {
+    t.classList.toggle('done', drawn.includes(i + 1));
+    t.classList.toggle('last', i + 1 === last);
+  });
+  const left = MAX - drawn.length;
+  if (!rolling) {
+    if (last) { numEl.textContent = last; numEl.classList.remove('empty'); }
+    else { numEl.textContent = '?'; numEl.classList.add('empty'); }
+  }
+  statusEl.textContent = left ? '남은 번호 ' + left + '개' : '모든 번호를 뽑았어요';
+  drawBtn.disabled = rolling || left === 0;
+  drawBtn.textContent = left ? '뽑기!' : '끝!';
+}
+
+function confetti(){
+  if (reduce) return;
+  const ctx = cv.getContext('2d');
+  cv.width = innerWidth; cv.height = innerHeight;
+  const cols = ['#ff3d8b','#ffc928','#19c7d1','#7a4dff','#ffffff'];
+  const r = wheelEl.getBoundingClientRect();
+  const cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+  const ps = Array.from({length:90}, () => {
+    const a = Math.random() * Math.PI * 2, v = 5 + Math.random() * 9;
+    return {x:cx, y:cy, vx:Math.cos(a)*v, vy:Math.sin(a)*v - 4, s:6 + Math.random()*6,
+            c:cols[Math.floor(Math.random()*cols.length)], rot:Math.random()*6, vr:(Math.random()-.5)*.4};
+  });
+  let f = 0;
+  (function tick(){
+    ctx.clearRect(0, 0, cv.width, cv.height);
+    ps.forEach(p => {
+      p.vy += .35; p.vx *= .985; p.x += p.vx; p.y += p.vy; p.rot += p.vr;
+      ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.rot);
+      ctx.globalAlpha = Math.max(0, 1 - f / 100);
+      ctx.fillStyle = p.c; ctx.fillRect(-p.s/2, -p.s/3, p.s, p.s*.6); ctx.restore();
+    });
+    if (++f < 100) requestAnimationFrame(tick); else ctx.clearRect(0, 0, cv.width, cv.height);
+  })();
+}
+
+function draw(){
+  const pool = remaining();
+  if (!pool.length || rolling) return;
+  const pick = pool[Math.floor(Math.random() * pool.length)];
+  const finish = () => {
+    rolling = false; wheelEl.classList.remove('rolling');
+    drawn.push(pick); save();
+    numEl.classList.remove('rolling','empty','pop');
+    void numEl.offsetWidth;
+    numEl.classList.add('pop');
+    render(); confetti();
+  };
+  if (reduce || pool.length === 1) { finish(); return; }
+  rolling = true; render();
+  wheelEl.classList.add('rolling');
+  numEl.classList.remove('empty'); numEl.classList.add('rolling');
+  let t = 0;
+  const id = setInterval(() => {
+    numEl.textContent = pool[Math.floor(Math.random() * pool.length)];
+    t += 60;
+    if (t >= 1200) { clearInterval(id); finish(); }
+  }, 60);
+}
+
+let armTimer = null;
+resetBtn.addEventListener('click', () => {
+  if (rolling) return;
+  if (!resetBtn.classList.contains('armed')) {
+    resetBtn.classList.add('armed');
+    resetBtn.textContent = '한 번 더 누르면 초기화';
+    armTimer = setTimeout(() => { resetBtn.classList.remove('armed'); resetBtn.textContent = '처음부터 다시'; }, 3000);
+    return;
+  }
+  clearTimeout(armTimer);
+  resetBtn.classList.remove('armed'); resetBtn.textContent = '처음부터 다시';
+  drawn = []; save(); render();
+});
+
+drawBtn.addEventListener('click', draw);
+render();
+</script>
+</body>
+</html>
